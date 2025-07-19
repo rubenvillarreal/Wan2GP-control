@@ -4449,7 +4449,7 @@ def generate_video(
                         refresh_preview["video_guide"] = Image.fromarray(video_guide_processed[0].cpu().numpy())
                         if video_guide_processed2 != None:
                             refresh_preview["video_guide"] = [refresh_preview["video_guide"], Image.fromarray(video_guide_processed2[0].cpu().numpy())] 
-                        if video_mask_processed != None:                        
+                        if video_mask_processed != None and not ("P" in video_prompt_type and "U" in video_prompt_type):                        
                             refresh_preview["video_mask"] = Image.fromarray(video_mask_processed[0].cpu().numpy())
                 frames_to_inject_parsed = frames_to_inject[guide_start_frame: guide_end_frame]
 
@@ -4486,7 +4486,7 @@ def generate_video(
                 send_cmd("progress", progress_args)
                 src_video, src_mask = preprocess_video_with_mask(video_guide,  video_mask, height=height, width = width, max_frames= current_video_length if window_no == 1 else current_video_length - reuse_frames, start_frame = guide_start_frame, fit_canvas = sample_fit_canvas, target_fps = fps, process_type= "pose" if "P" in video_prompt_type else "inpaint", negate_mask = "N" in video_prompt_type, inpaint_color =0)
                 refresh_preview["video_guide"] = Image.fromarray(src_video[0].cpu().numpy()) 
-                if src_mask != None:                        
+                if src_mask != None and not ("P" in video_prompt_type and "U" in video_prompt_type):                        
                     refresh_preview["video_mask"] = Image.fromarray(src_mask[0].cpu().numpy())
             if len(refresh_preview) > 0:
                 new_inputs= locals()
