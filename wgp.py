@@ -6254,7 +6254,7 @@ def refresh_video_prompt_type_video_guide(state, video_prompt_type, video_prompt
     video_prompt_type = del_in_sequence(video_prompt_type, "PDSLCMGUV")
     video_prompt_type = add_to_sequence(video_prompt_type, video_prompt_type_video_guide)
     visible = "V" in video_prompt_type
-    mask_visible = visible and "A" in video_prompt_type and not "U" in video_prompt_type
+    mask_visible = visible and "A" in video_prompt_type and not "U" in video_prompt_type and not (video_prompt_type_video_guide == "PUV")
     model_type = state["model_type"]
     model_def = get_model_def(model_type)
     image_outputs = model_def.get("image_outputs", False)
