@@ -3342,7 +3342,44 @@ def get_preprocessor(process_type, inpaint_color):
         anno_ins = lambda img: FlowVisAnnotator(cfg_dict).forward(img)
     elif process_type=="inpaint":
         anno_ins = lambda img :  len(img) * [inpaint_color]
-    elif process_type == None or process_type in ["vace", "identity"]:
+    elif process_type == "pose_normalize":
+        def normalize_pose_colors(img_list):
+            """Normalize pose videos to DWPose-compatible format"""
+            import cv2
+            normalized_imgs = []
+            for img in img_list:
+                img_np = np.array(img) if hasattr(img, '__array__') else img
+                
+                # Convert to HSV to better detect colored lines on dark background
+                hsv = cv2.cvtColor(img_np, cv2.COLOR_RGB2HSV)
+                
+                # Create mask for dark background (low value channel)
+                # Assume background should be darker than pose lines
+                background_mask = hsv[:,:,2] < 50  # Value channel < 50 (dark areas)
+                
+                # Create mask for bright/colored areas (pose lines)
+                pose_mask = hsv[:,:,2] >= 50  # Value channel >= 50 (bright areas)
+                
+                # Create output image with pure black background
+                output = np.zeros_like(img_np)
+                
+                # For pose areas, use a consistent bright color scheme
+                # Convert pose areas to bright colors similar to DWPose
+                if np.any(pose_mask):
+                    # Use the original colors but ensure they're bright enough
+                    output[pose_mask] = img_np[pose_mask]
+                    # Boost brightness of pose lines to match DWPose levels
+                    output[pose_mask] = np.clip(output[pose_mask] * 1.5, 0, 255).astype(np.uint8)
+                
+                # Ensure background is pure black
+                output[background_mask] = [0, 0, 0]
+                
+                normalized_imgs.append(output)
+            return normalized_imgs
+        anno_ins = normalize_pose_colors
+    elif process_type == "identity":
+        anno_ins = lambda img : img
+    elif process_type == None or process_type in ["vace"]:
         anno_ins = lambda img : img
     else:
         raise Exception(f"process type '{process_type}' non supported")
@@ -4425,8 +4462,8 @@ def generate_video(
                     
                     # Special handling for PUV (Pre-processed Pose Video)
                     if "P" in video_prompt_type and "U" in video_prompt_type:
-                        # Use identity to keep video unchanged, but it will be treated as pose data
-                        preprocess_type = "identity"
+                        # Normalize pose colors and black levels to match DWPose format
+                        preprocess_type = "pose_normalize"
                         preprocess_type2 = None
                     else:
                         for process_num, process_letter in enumerate( filter_letters(video_prompt_type, "PDSLCMU")):
@@ -4434,7 +4471,7 @@ def generate_video(
                                 preprocess_type = process_map.get(process_letter, "vace")
                             else:
                                 preprocess_type2 = process_map.get(process_letter, None)
-                    process_names = { "pose": "Open Pose", "depth": "Depth Mask", "scribble" : "Shapes", "flow" : "Flow Map", "gray" : "Gray Levels", "inpaint" : "Inpaint Mask", "identity": "Identity Mask", "vace" : "Vace Data"}
+                    process_names = { "pose": "Open Pose", "depth": "Depth Mask", "scribble" : "Shapes", "flow" : "Flow Map", "gray" : "Gray Levels", "inpaint" : "Inpaint Mask", "identity": "Identity Mask", "vace" : "Vace Data", "pose_normalize": "Normalizing Pose Data"}
                     # Special status for pre-processed pose video
                     if "P" in video_prompt_type and "U" in video_prompt_type:
                         status_info = "Using Pre-processed Pose Data"
