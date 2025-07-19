@@ -551,8 +551,16 @@ def process_prompt_and_add_tasks(state, model_choice):
     return update_queue_data(queue)
 
 def get_preview_images(inputs):
-    inputs_to_query = ["image_start", "image_end", "video_source", "video_guide", "image_guide", "video_mask", "image_mask", "image_refs" ]
-    labels = ["Start Image", "End Image", "Video Source", "Video Guide", "Image Guide", "Video Mask", "Image Mask", "Image Reference"]
+    # Check if PUV (Pre-processed Pose Video) is selected
+    video_prompt_type = inputs.get("video_prompt_type", "")
+    is_puv = "P" in video_prompt_type and "U" in video_prompt_type
+    
+    if is_puv:
+        inputs_to_query = ["image_start", "image_end", "video_source", "video_guide", "image_guide", "image_mask", "image_refs" ]
+        labels = ["Start Image", "End Image", "Video Source", "Video Guide", "Image Guide", "Image Mask", "Image Reference"]
+    else:
+        inputs_to_query = ["image_start", "image_end", "video_source", "video_guide", "image_guide", "video_mask", "image_mask", "image_refs" ]
+        labels = ["Start Image", "End Image", "Video Source", "Video Guide", "Image Guide", "Video Mask", "Image Mask", "Image Reference"]
     start_image_data = None
     start_image_labels = []
     end_image_data = None
