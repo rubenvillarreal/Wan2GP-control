@@ -4414,13 +4414,24 @@ def generate_video(
                     process_outside_mask = process_map.get(filter_letters(video_prompt_type, "YWX"), None)
                     preprocess_type, preprocess_type2 =  "vace", None 
                     process_map = { "P": "pose", "D" : "depth", "S": "scribble", "L": "flow", "C": "gray", "M": "inpaint", "U": "identity"}
-                    for process_num, process_letter in enumerate( filter_letters(video_prompt_type, "PDSLCMU")):
-                        if process_num == 0:
-                            preprocess_type = process_map.get(process_letter, "vace")
-                        else:
-                            preprocess_type2 = process_map.get(process_letter, None)
+                    
+                    # Special handling for PUV (Pre-processed Pose Video)
+                    if "P" in video_prompt_type and "U" in video_prompt_type:
+                        # Use identity to keep video unchanged, but it will be treated as pose data
+                        preprocess_type = "identity"
+                        preprocess_type2 = None
+                    else:
+                        for process_num, process_letter in enumerate( filter_letters(video_prompt_type, "PDSLCMU")):
+                            if process_num == 0:
+                                preprocess_type = process_map.get(process_letter, "vace")
+                            else:
+                                preprocess_type2 = process_map.get(process_letter, None)
                     process_names = { "pose": "Open Pose", "depth": "Depth Mask", "scribble" : "Shapes", "flow" : "Flow Map", "gray" : "Gray Levels", "inpaint" : "Inpaint Mask", "identity": "Identity Mask", "vace" : "Vace Data"}
-                    status_info = "Extracting " + process_names[preprocess_type]
+                    # Special status for pre-processed pose video
+                    if "P" in video_prompt_type and "U" in video_prompt_type:
+                        status_info = "Using Pre-processed Pose Data"
+                    else:
+                        status_info = "Extracting " + process_names[preprocess_type]
                     extra_process_list = ([] if preprocess_type2==None else [preprocess_type2]) + ([] if process_outside_mask==None or process_outside_mask == preprocess_type else [process_outside_mask])
                     if len(extra_process_list) == 1:
                         status_info += " and " + process_names[extra_process_list[0]]
@@ -6627,6 +6638,7 @@ def generate_video_tab(update_form = False, state_dict = None, ui_defaults = Non
                                 ("No Control Image" if image_outputs else "No Control Video", ""),
                                 ("Keep Control Image Unchanged" if image_outputs else "Keep Control Video Unchanged", "UV"),
                                 ("Transfer Human Motion", "PV"),
+                                ("Use Pre-processed Pose Image" if image_outputs else "Use Pre-processed Pose Video", "PUV"),
                                 ("Transfer Depth", "DV"),
                                 ("Transfer Shapes", "SV"),
                                 ("Transfer Flow", "LV"),
